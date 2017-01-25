@@ -1,0 +1,35 @@
+/*
+ * This file is part of elfninja
+ * Copyright (C) 2017  Alexandre Monti
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef DEF_FIELD_GNU_ABI_TAG
+#define DEF_FIELD_GNU_ABI_TAG(name, ident, elf_field, attrs, descr)
+#endif
+
+#ifndef DEF_FIELD_GNU_BUILD_ID
+#define DEF_FIELD_GNU_BUILD_ID(name, ident, elf_field, attrs, descr)
+#endif
+
+DEF_FIELD_GNU_ABI_TAG ("os",           OS,           "", "", "Operating System")
+DEF_FIELD_GNU_ABI_TAG ("abi_major",    ABI_MAJOR,    "", "", "ABI major version")
+DEF_FIELD_GNU_ABI_TAG ("abi_minor",    ABI_MINOR,    "", "", "ABI minor version")
+DEF_FIELD_GNU_ABI_TAG ("abi_subminor", ABI_SUBMINOR, "", "", "ABI subminor version")
+
+DEF_FIELD_GNU_BUILD_ID("id",           ID,           "", "", "Build ID bits")
+
+#undef DEF_FIELD_GNU_BUILD_ID
+#undef DEF_FIELD_GNU_ABI_TAG

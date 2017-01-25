@@ -1,0 +1,36 @@
+/*
+ * This file is part of elfninja
+ * Copyright (C) 2017  Alexandre Monti
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef DEF_FIELD
+#define DEF_FIELD(name, ident, elf_field, attrs, descr)
+#endif
+
+DEF_FIELD("index",       INDEX,      "",             "",      "Symbol entry index")
+DEF_FIELD("name_index",  NAME_INDEX, "st_name",      "",      "Symbol name index in strtab")
+DEF_FIELD("name",        NAME,       "",             "fixed", "Symbol name")
+DEF_FIELD("value",       VALUE,      "st_value",     "fixed", "Symbol value")
+DEF_FIELD("size",        SIZE,       "st_size",      "fixed", "Symbol size")
+DEF_FIELD("info",        INFO,       "st_info",      "fixed", "Symbol information field")
+DEF_FIELD("bind",        BIND,       "",             "",      "Symbol binding")
+DEF_FIELD("type",        TYPE,       "",             "",      "Symbol type")
+DEF_FIELD("other",       OTHER,      "st_other",     "fixed", "Other symbol information")
+DEF_FIELD("visibility",  VISIBILITY, "",             "",      "Symbol visibility")
+DEF_FIELD("shndx",       SHNDX,      "st_shndx",     "",      "Target section index")
+DEF_FIELD("sh_name",     SH_NAME,    "",             "",      "Target section name")
+
+#undef DEF_FIELD

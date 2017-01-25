@@ -1,0 +1,42 @@
+/*
+ * This file is part of elfninja
+ * Copyright (C) 2017  Alexandre Monti
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef DEF_FIELD
+#define DEF_FIELD(name, ident, elf_field, attrs, descr)
+#endif
+
+DEF_FIELD("class",      CLASS,      "e_ident[EI_CLASS]",      "",      "ELF file class (32/64 bit)")
+DEF_FIELD("data",       DATA,       "e_ident[EI_DATA]",       "",      "Data encoding (little / big endian)")
+DEF_FIELD("version",    VERSION,    "e_ident[EI_VERSION]",    "",      "ELF format version")
+DEF_FIELD("osabi",      OSABI,      "e_ident[EI_OSABI]",      "",      "Operating System ABI")
+DEF_FIELD("abiversion", ABIVERSION, "e_ident[EI_ABIVERSION]", "",      "OS ABI version byte")
+DEF_FIELD("type",       TYPE,       "e_type",                 "",      "ELF file type")
+DEF_FIELD("machine",    MACHINE,    "e_machine",              "",      "Target machine architecture")
+DEF_FIELD("entry",      ENTRY,      "e_entry",                "fixed", "Entry address")
+DEF_FIELD("phoff",      PHOFF,      "e_phoff",                "fixed", "Program Header Table offset")
+DEF_FIELD("shoff",      SHOFF,      "e_shoff",                "fixed", "Section Header Table offset")
+DEF_FIELD("flags",      FLAGS,      "e_flags",                "fixed", "Processor-specific flags")
+DEF_FIELD("ehsize",     EHSIZE,     "e_ehsize",               "fixed", "ELF header size")
+DEF_FIELD("phentsize",  PHENTSIZE,  "e_phentsize",            "fixed", "Program Header size")
+DEF_FIELD("phnum",      PHNUM,      "e_phnum",                "",      "Program Header count")
+DEF_FIELD("shentsize",  SHENTSIZE,  "e_shentsize",            "fixed", "Section Header size")
+DEF_FIELD("shnum",      SHNUM,      "e_shnum",                "",      "Section Header count")
+DEF_FIELD("shstrndx",   SHSTRNDX,   "e_shstrndx",             "",      "Section header index of the section name string table")
+DEF_FIELD("shstr_name", SHSTR_NAME, "",                       "fixed", "Section name of the section name string table")
+
+#undef DEF_FIELD

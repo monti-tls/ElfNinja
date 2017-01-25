@@ -1,0 +1,39 @@
+/*
+ * This file is part of elfninja
+ * Copyright (C) 2017  Alexandre Monti
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef DEF_FIELD
+#define DEF_FIELD(name, ident, elf_field, attrs, descr)
+#endif
+
+DEF_FIELD("index",       INDEX,       "",             "",      "Section header index")
+DEF_FIELD("name_index",  NAME_INDEX,  "sh_name",      "",      "Section name index in strtab")
+DEF_FIELD("name",        NAME,        "",             "",      "Section name")
+DEF_FIELD("type",        TYPE,        "sh_type",      "fixed", "Section type")
+DEF_FIELD("flags",       FLAGS,       "sh_flags",     "fixed", "Section flags")
+DEF_FIELD("short_flags", SHORT_FLAGS, "",             "fixed", "Section flags (short version)")
+DEF_FIELD("addr",        ADDR,        "sh_addr",      "fixed", "Section base address if memory-mapped")
+DEF_FIELD("offset",      OFFSET,      "sh_offset",    "fixed", "File offset of the section contents")
+DEF_FIELD("size",        SIZE,        "sh_size",      "fixed", "Section size")
+DEF_FIELD("link",        LINK,        "sh_link",      "",      "Linked section index")
+DEF_FIELD("link_name",   LINK_NAME,   "",             "",      "Linked section name")
+DEF_FIELD("info",        INFO,        "sh_info",      "fixed", "Additional information")
+DEF_FIELD("info_name",   INFO_NAME,   "",             "",      "Additional information as a section")
+DEF_FIELD("addralign",   ADDRALIGN,   "sh_addralign", "fixed", "Section address alignment")
+DEF_FIELD("entsize",     ENTSIZE,     "sh_entsize",   "fixed", "Size of entries in section")
+
+#undef DEF_FIELD

@@ -1,0 +1,34 @@
+/*
+ * This file is part of elfninja
+ * Copyright (C) 2017  Alexandre Monti
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef DEF_FIELD
+#define DEF_FIELD(name, ident, elf_field, attrs, descr)
+#endif
+
+DEF_FIELD("index",       INDEX,       "",         "",      "Program header index")
+DEF_FIELD("type",        TYPE,        "p_type",   "",      "Type of the segment")
+DEF_FIELD("offset",      OFFSET,      "p_offset", "fixed", "File offset of the segment")
+DEF_FIELD("vaddr",       VADDR,       "p_vaddr",  "fixed", "Virtual address mapping of the segment")
+DEF_FIELD("paddr",       PADDR,       "p_paddr",  "fixed", "Physical address mapping of the segment")
+DEF_FIELD("filesz",      FILESZ,      "p_filesz", "fixed", "Size of the segment in file")
+DEF_FIELD("memsz",       MEMSZ,       "p_memsz",  "fixed", "Size of the segment when mapped in memory")
+DEF_FIELD("flags",       FLAGS,       "p_flags",  "",      "Segment flags")
+DEF_FIELD("short_flags", SHORT_FLAGS, "",         "fixed", "Segment flags (short version)")
+DEF_FIELD("align",       ALIGN,       "p_align",  "fixed", "Segment alignment")
+
+#undef DEF_FIELD
