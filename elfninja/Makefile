@@ -20,8 +20,9 @@ RM = rm
 
 ### Compilation flags
 
-CC_FLAGS = -std=gnu++11 -Wall
-LD_FLAGS = -ldl
+CC_FLAGS  = -std=gnu++11 -Wall
+CC_FLAGS += -g -ggdb -O0
+LD_FLAGS  = -ldl
 
 ### Files
 
@@ -39,11 +40,6 @@ PROG_OBJ = $(patsubst $(SRC_DIR)/%.$(SRC_EXT),$(TMP_DIR)/%.o,$(PROG_SRC))
 
 CC_FLAGS += -fPIC -I$(INC_DIR)
 
-### Dependencies
-
-DEPS = $(patsubst $(SRC_DIR)/%.$(SRC_EXT),$(TMP_DIR)/%.d,$(PROG_SRC))
--include $(DEPS)
-
 ### Top-level targets
 
 all: $(PROGRAM) $(STATIC_LIB) $(DYNAMIC_LIB)
@@ -51,6 +47,11 @@ all: $(PROGRAM) $(STATIC_LIB) $(DYNAMIC_LIB)
 .PHONY: clean
 clean:
 	$(RM) -rf $(TMP_DIR) $(BIN_DIR)
+
+### Dependencies
+
+DEPS = $(patsubst $(SRC_DIR)/%.$(SRC_EXT),$(TMP_DIR)/%.d,$(PROG_SRC))
+-include $(DEPS)
 
 ### Final products
 

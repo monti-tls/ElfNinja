@@ -10,136 +10,87 @@ namespace enj
     class Blob
     {
     public:
-        struct Event;
-        struct WriteEvent;
-        struct ReadEvent;
-        struct InsertEvent;
-        struct RemoveEvent;
-        struct MoveEvent;
-
-        class EventSubscriber;
         class Anchor;
         class Cursor;
 
     public:
         virtual ~Blob();
 
-        void write(size_t pos, uint8_t const* buffer, size_t size);
-        void read(size_t pos, uint8_t* buffer, size_t size) const;
-        void insert(size_t pos, uint8_t const* buffer, size_t size);
+        size_t size() const;
+        void write(size_t pos, uint8_t const* data, size_t size);
+        void read(size_t pos, uint8_t* data, size_t size) const;
+
+        void insert(size_t pos, uint8_t const* data, size_t size);
+        void insertAfter(Anchor* a, uint8_t const* data, size_t size);
+        void insertBefore(Anchor* a, uint8_t const* data, size_t size);
+        void insertAfterStart(Cursor* c, uint8_t const* data, size_t size);
+        void insertBeforeStart(Cursor* c, uint8_t const* data, size_t size);
+        void insertAfterEnd(Cursor* c, uint8_t const* data, size_t size);
+        void insertBeforeEnd(Cursor* c, uint8_t const* data, size_t size);
+
         void remove(size_t pos, size_t size);
-        void move(size_t src, size_t dest, size_t size);
+        void removeAfter(Anchor* a, size_t size);
+        void removeBefore(Anchor* a, size_t size);
+        void removeAfterStart(Cursor* c, size_t size);
+        // void removeBeforeStart(Cursor* c, size_t size);
+        void removeAfterEnd(Cursor* c, size_t size);
+        // void removeBeforeEnd(Cursor* c, size_t size);
 
         Anchor* addAnchor(size_t pos);
-        void removeAnchor(Anchor* anchor);
+        void removeAnchor(Anchor* a);
 
         Cursor* addCursor(size_t pos, size_t size);
-        void removeCursor(Cursor* cursor);
-
-        virtual size_t size() const = 0;
+        void removeCursor(Cursor* c);
 
     protected:
-        virtual void M_event(Blob::Event* evt) = 0;
+        virtual void M_write(size_t pos, uint8_t const* data, size_t size) = 0;
+        virtual void M_read(size_t pos, uint8_t* data, size_t size) const = 0;
+        virtual void M_insert(size_t pos, uint8_t const* data, size_t size) = 0;
+        virtual void M_remove(size_t pos, size_t size) = 0;
+        virtual size_t M_size() const = 0;
 
     private:
-        void M_addEventSubscriber(EventSubscriber* subscriber);
-        void M_removeEventSubscriber(EventSubscriber* subscriber);
-        void M_notify(Event* event);
+        void M_lshiftAnchors(Anchor* before, Anchor* after, size_t pos, size_t amount);
+        void M_rshiftAnchors(Anchor* before, Anchor* after, size_t pos, size_t amount);
+        void M_updateCursors();
 
     private:
-        std::list<EventSubscriber*> m_eventSubscribers;
+        std::list<Anchor*> m_anchors;
+        std::list<Cursor*> m_cursors;
     };
 
-    struct Blob::Event
-    {};
-
-    struct Blob::WriteEvent : public Blob::Event
-    {
-        size_t pos;
-        uint8_t const* buffer;
-        size_t size;
-    };
-
-    struct Blob::ReadEvent : public Blob::Event
-    {
-        size_t pos;
-        uint8_t* buffer;
-        size_t size;
-    };
-
-    struct Blob::InsertEvent : public Blob::Event
-    {
-        size_t pos;
-        uint8_t const* buffer;
-        size_t size;
-    };
-
-    struct Blob::RemoveEvent : public Blob::Event
-    {
-        size_t pos;
-        size_t size;
-    };
-
-    struct Blob::MoveEvent : public Blob::Event
-    {
-        size_t src;
-        size_t dest;
-        size_t size;
-    };
-
-    class Blob::EventSubscriber
-    {
-    public:
-        EventSubscriber(Blob* parent);
-        virtual ~EventSubscriber();
-
-        Blob* parent() const;
-
-        virtual void event(Blob::InsertEvent* event) = 0;
-        virtual void event(Blob::RemoveEvent* event) = 0;
-        virtual void event(Blob::MoveEvent* event) = 0;
-        virtual void event(Blob::Event* event);
-
-    private:
-        Blob* m_parent;
-    };
-
-    class Blob::Anchor : public Blob::EventSubscriber
+    class Blob::Anchor
     {
         friend class Blob;
+
+    public:
+        size_t pos() const;
+
     private:
-        Anchor(Blob* parent, size_t pos);
+        Anchor();
         ~Anchor();
 
-    public:
-        size_t pos() const;
-
-        void event(Blob::InsertEvent* event);
-        void event(Blob::RemoveEvent* event);
-        void event(Blob::MoveEvent* event);
-
-    private:
         size_t m_pos;
     };
 
-    class Blob::Cursor : public Blob::EventSubscriber
+    class Blob::Cursor
     {
         friend class Blob;
-    private:
-        Cursor(Blob* parent, size_t pos, size_t size);
-        ~Cursor();
 
     public:
-        size_t pos() const;
-        size_t size() const;
-
-        void event(Blob::InsertEvent* event);
-        void event(Blob::RemoveEvent* event);
-        void event(Blob::MoveEvent* event);
+        Anchor* start() const;
+        Anchor* end() const;
+        size_t length() const;
 
     private:
-        size_t m_pos;
-        size_t m_size;
+        Cursor();
+        ~Cursor();
+
+        void update();
+
+        Anchor* m_start;
+        Anchor* m_end;
+        size_t m_length;
     };
 }
 

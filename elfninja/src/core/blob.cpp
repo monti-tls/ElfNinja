@@ -1,4 +1,5 @@
 #include "elfninja/core/blob.h"
+#include "elfninja/core/error.h"
 
 #include <algorithm>
 
@@ -6,137 +7,281 @@ using namespace enj;
 
 Blob::~Blob()
 {
-    for (auto it : m_eventSubscribers)
-        delete it;
+    for (Cursor* c : m_cursors)
+        delete c;
+
+    for (Anchor* a : m_anchors)
+        delete a;
 }
 
-void Blob::write(size_t pos, uint8_t const* buffer, size_t size)
+size_t Blob::size() const
 {
-    WriteEvent* event = new WriteEvent();
-    event->pos = pos;
-    event->buffer = buffer;
-    event->size = size;
-
-    M_event(event);
-    M_notify(event);
-
-    delete event;
+    return M_size();
 }
 
-void Blob::read(size_t pos, uint8_t* buffer, size_t size) const
+void Blob::write(size_t pos, uint8_t const* data, size_t size)
 {
-    ReadEvent* event = new ReadEvent();
-    event->pos = pos;
-    event->buffer = buffer;
-    event->size = size;
+    enj_assert(Bounds, pos + size <= M_size());
 
-    const_cast<Blob*>(this)->M_event(event);
-    const_cast<Blob*>(this)->M_notify(event);
-
-    delete event;
+    M_write(pos, data, size);
 }
 
-void Blob::insert(size_t pos, uint8_t const* buffer, size_t size)
+void Blob::read(size_t pos, uint8_t* data, size_t size) const
 {
-    InsertEvent* event = new InsertEvent();
-    event->pos = pos;
-    event->buffer = buffer;
-    event->size = size;
+    enj_assert(Bounds, pos + size <= M_size());
 
-    M_event(event);
-    M_notify(event);
+    M_read(pos, data, size);
+}
 
-    delete event;
+void Blob::insert(size_t pos, uint8_t const* data, size_t size)
+{
+    enj_assert(Argument, data);
+    enj_assert(Bounds, pos <= M_size());
+
+    M_insert(pos, data, size);
+    M_rshiftAnchors(0, 0, pos, size);
+    M_updateCursors();
+}
+
+void Blob::insertAfter(Anchor* a, uint8_t const* data, size_t size)
+{
+    enj_assert(Argument, a && data);
+    enj_assert(Bounds, a->pos() <= M_size());
+
+    M_insert(a->pos(), data, size);
+    M_rshiftAnchors(0, a, a->pos(), size);
+    M_updateCursors();
+}
+
+void Blob::insertBefore(Anchor* a, uint8_t const* data, size_t size)
+{
+    enj_assert(Argument, a && data);
+    enj_assert(Bounds, a->pos() <= M_size());
+
+    M_insert(a->pos(), data, size);
+    M_rshiftAnchors(a, 0, a->pos(), size);
+    M_updateCursors();
+}
+
+void Blob::insertAfterStart(Cursor* c, uint8_t const* data, size_t size)
+{
+    enj_assert(Argument, c && data);
+    enj_internal_assert(NullPointer, c->start() && c->end());
+    enj_assert(Bounds, c->start()->pos() <= M_size());
+
+    M_insert(c->start()->pos(), data, size);
+    M_rshiftAnchors(c->end(), c->start(), c->start()->pos(), size);
+}
+
+void Blob::insertBeforeStart(Cursor* c, uint8_t const* data, size_t size)
+{
+    enj_assert(Argument, c && data);
+    enj_internal_assert(NullPointer, c->start() && c->end());
+    enj_assert(Bounds, c->start()->pos() <= M_size());
+
+    M_insert(c->start()->pos(), data, size);
+    M_rshiftAnchors(c->start(), 0, c->start()->pos(), size);
+}
+
+void Blob::insertAfterEnd(Cursor* c, uint8_t const* data, size_t size)
+{
+    enj_assert(Argument, c && data);
+    enj_internal_assert(NullPointer, c->end() && c->end());
+    enj_assert(Bounds, c->end()->pos() <= M_size());
+
+    M_insert(c->end()->pos(), data, size);
+    M_rshiftAnchors(0, c->end(), c->end()->pos(), size);
+}
+
+void Blob::insertBeforeEnd(Cursor* c, uint8_t const* data, size_t size)
+{
+    enj_assert(Argument, c && data);
+    enj_internal_assert(NullPointer, c->end() && c->end());
+    enj_assert(Bounds, c->end()->pos() <= M_size());
+
+    M_insert(c->end()->pos(), data, size);
+    M_rshiftAnchors(c->end(), 0, c->end()->pos(), size);
 }
 
 void Blob::remove(size_t pos, size_t size)
 {
-    RemoveEvent* event = new RemoveEvent();
-    event->pos = pos;
-    event->size = size;
+    enj_assert(Bounds, pos + size <= M_size());
 
-    M_event(event);
-    M_notify(event);
-
-    delete event;
+    M_remove(pos, size);
+    M_lshiftAnchors(0, 0, pos, size);
+    M_updateCursors();
 }
 
-void Blob::move(size_t src, size_t dest, size_t size)
+void Blob::removeAfter(Anchor* a, size_t size)
 {
-    MoveEvent* event = new MoveEvent();
-    event->src = src;
-    event->dest = dest;
-    event->size = size;
+    enj_assert(Argument, a);
+    enj_assert(Bounds, a->pos() + size <= M_size());
 
-    M_event(event);
-    M_notify(event);
-
-    delete event;
+    M_remove(a->pos(), size);
+    M_lshiftAnchors(0, a, a->pos(), size);
+    M_updateCursors();
 }
+
+void Blob::removeBefore(Anchor* a, size_t size)
+{
+    enj_assert(Argument, a);
+    enj_assert(Bounds, a->pos() + size <= M_size());
+
+    M_remove(a->pos(), size);
+    M_lshiftAnchors(a, 0, a->pos(), size);
+    M_updateCursors();
+}
+
+void Blob::removeAfterStart(Cursor* c, size_t size)
+{
+    enj_assert(Argument, c);
+    enj_internal_assert(NullPointer, c->start() && c->end());
+    enj_assert(Bounds, c->start()->pos() + size <= M_size());
+
+    M_remove(c->start()->pos(), size);
+    M_lshiftAnchors(0, c->start(), c->start()->pos(), size);
+    M_updateCursors();
+}
+
+/*void Blob::removeBeforeStart(Cursor* c, size_t size)
+{
+    enj_assert(Argument, c);
+    enj_internal_assert(NullPointer, c->start() && c->end());
+    enj_assert(Bounds, c->start()->pos() + size <= M_size());
+
+    M_remove(c->start()->pos(), size);
+    M_lshiftAnchors(c->start(), 0, c->start()->pos(), size);
+    M_updateCursors();
+}*/
+
+void Blob::removeAfterEnd(Cursor* c, size_t size)
+{
+    enj_assert(Argument, c);
+    enj_internal_assert(NullPointer, c->end() && c->end());
+    enj_assert(Bounds, c->end()->pos() + size <= M_size());
+
+    M_remove(c->end()->pos(), size);
+    M_lshiftAnchors(0, c->end(), c->end()->pos(), size);
+    M_updateCursors();
+}
+
+/*void Blob::removeBeforeEnd(Cursor* c, size_t size)
+{
+    enj_assert(Argument, c);
+    enj_internal_assert(NullPointer, c->end() && c->end());
+    enj_assert(Bounds, c->end()->pos() + size <= M_size());
+
+    M_remove(c->end()->pos(), size);
+    M_lshiftAnchors(c->end(), 0, c->end()->pos(), size);
+    M_updateCursors();
+}*/
 
 Blob::Anchor* Blob::addAnchor(size_t pos)
 {
-    Anchor* anchor = new Anchor(this, pos);
-    M_addEventSubscriber(anchor);
-    return anchor;
+    enj_assert(Bounds, pos <= M_size());
+
+    Anchor* a = new Anchor();
+    a->m_pos = pos;
+
+    m_anchors.push_back(a);
+
+    return a;
 }
 
-void Blob::removeAnchor(Blob::Anchor* anchor)
+void Blob::removeAnchor(Anchor* a)
 {
-    M_removeEventSubscriber(anchor);
-    delete anchor;
+    enj_assert(Argument, a);
+
+    auto it = std::find(m_anchors.begin(), m_anchors.end(), a);
+
+    if (it != m_anchors.end())
+    {
+        m_anchors.erase(it);
+        delete a;
+    }
 }
 
 Blob::Cursor* Blob::addCursor(size_t pos, size_t size)
 {
-    Cursor* cursor = new Cursor(this, pos, size);
-    M_addEventSubscriber(cursor);
-    return cursor;
+    enj_assert(Bounds, pos <= M_size());
+
+    Cursor* c = new Cursor();
+    c->m_start = addAnchor(pos);
+    c->m_end = addAnchor(size);
+    c->update();
+
+    m_cursors.push_back(c);
+
+    return c;
 }
 
-void Blob::removeCursor(Blob::Cursor* cursor)
+void Blob::removeCursor(Cursor* c)
 {
-    M_removeEventSubscriber(cursor);
-    delete cursor;
+    enj_assert(Argument, c);
+
+    auto it = std::find(m_cursors.begin(), m_cursors.end(), c);
+
+    if (it != m_cursors.end())
+    {
+        removeAnchor(c->end());
+        removeAnchor(c->start());
+
+        m_cursors.erase(it);
+        delete c;
+    }
 }
 
-void Blob::M_addEventSubscriber(Blob::EventSubscriber* subscriber)
+void Blob::M_lshiftAnchors(Blob::Anchor* before, Blob::Anchor* after, size_t pos, size_t amount)
 {
-    m_eventSubscribers.push_back(subscriber);
+    for (Anchor* a : m_anchors)
+    {
+        enj_internal_assert(NullPointer, a);
+
+        // Default lshift policy is 'after'
+
+        if (a->pos() > pos)
+        {
+            a->m_pos -= amount;
+        }
+        else if (a->pos() == pos)
+        {
+            if (a == before)
+                a->m_pos -= amount;
+        }
+    }
 }
 
-void Blob::M_removeEventSubscriber(Blob::EventSubscriber* subscriber)
+void Blob::M_rshiftAnchors(Blob::Anchor* before, Blob::Anchor* after, size_t pos, size_t amount)
 {
-    auto it = std::find(m_eventSubscribers.begin(), m_eventSubscribers.end(), subscriber);
+    for (Anchor* a : m_anchors)
+    {
+        enj_internal_assert(NullPointer, a);
 
-    if (it != m_eventSubscribers.end())
-        m_eventSubscribers.erase(it);
+        // Default rshift policy is 'after'
+
+        if (a->pos() > pos)
+        {
+            a->m_pos += amount;
+        }
+        else if (a->pos() == pos)
+        {
+            if (a == before)
+                a->m_pos += amount;
+        }
+    }
 }
 
-void Blob::M_notify(Event* event)
+void Blob::M_updateCursors()
 {
-    for (auto it : m_eventSubscribers)
-        it->event(event);
+    for (Cursor* c : m_cursors)
+    {
+        enj_internal_assert(NullPointer, c);
+
+        c->update();
+    }
 }
 
-Blob::EventSubscriber::EventSubscriber(Blob* parent)
-    : m_parent(parent)
-{}
-
-Blob::EventSubscriber::~EventSubscriber()
-{}
-
-Blob* Blob::EventSubscriber::parent() const
-{
-    return m_parent;
-}
-
-void Blob::EventSubscriber::event(Blob::Event* event)
-{}
-
-Blob::Anchor::Anchor(Blob* parent, size_t pos)
-    : Blob::EventSubscriber(parent)
-    , m_pos(pos)
+Blob::Anchor::Anchor()
 {}
 
 Blob::Anchor::~Anchor()
@@ -147,51 +292,33 @@ size_t Blob::Anchor::pos() const
     return m_pos;
 }
 
-void Blob::Anchor::event(Blob::InsertEvent* event)
-{
-
-}
-
-void Blob::Anchor::event(Blob::RemoveEvent* event)
-{
-
-}
-
-void Blob::Anchor::event(Blob::MoveEvent* event)
-{
-
-}
-
-Blob::Cursor::Cursor(Blob* parent, size_t pos, size_t size)
-    : Blob::EventSubscriber(parent)
-    , m_pos(pos)
-    , m_size(size)
+Blob::Cursor::Cursor()
 {}
 
 Blob::Cursor::~Cursor()
 {}
 
-size_t Blob::Cursor::pos() const
+void Blob::Cursor::update()
 {
-    return m_pos;
+    if (!m_start || !m_end)
+        throw std::runtime_error("Blob::Cursor::update: null pointer");
+    else if (m_end->pos() < m_start->pos())
+        throw std::runtime_error("Blob::Cursor::update: negative length");
+
+    m_length = m_end->pos() - m_start->pos();
 }
 
-size_t Blob::Cursor::size() const
+Blob::Anchor* Blob::Cursor::start() const
 {
-    return m_size;
+    return m_start;
 }
 
-void Blob::Cursor::event(Blob::InsertEvent* event)
+Blob::Anchor* Blob::Cursor::end() const
 {
-
+    return m_end;
 }
 
-void Blob::Cursor::event(Blob::RemoveEvent* event)
+size_t Blob::Cursor::length() const
 {
-
-}
-
-void Blob::Cursor::event(Blob::MoveEvent* event)
-{
-
+    return m_length;
 }

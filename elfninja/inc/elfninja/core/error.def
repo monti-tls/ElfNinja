@@ -1,0 +1,10 @@
+#ifndef DEF_ERROR
+#define DEF_ERROR(name, desc)
+#endif
+
+DEF_ERROR(NullPointer, "null pointer")
+DEF_ERROR(Argument, "bad argument")
+DEF_ERROR(Bounds, "bad index / size")
+DEF_ERROR(Malloc, "malloc() / realloc() failed")
+
+#undef DEF_ERROR
