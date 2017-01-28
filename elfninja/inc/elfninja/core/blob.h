@@ -14,6 +14,8 @@ namespace enj
         class Cursor;
 
     public:
+        Blob(Blob const&) = delete;
+        Blob();
         virtual ~Blob();
 
         size_t size() const;
@@ -64,12 +66,14 @@ namespace enj
         friend class Blob;
 
     public:
+        Blob* blob() const;
         size_t pos() const;
 
     private:
-        Anchor();
+        Anchor(Blob* blob);
         ~Anchor();
 
+        Blob* m_blob;
         size_t m_pos;
     };
 
@@ -78,16 +82,18 @@ namespace enj
         friend class Blob;
 
     public:
+        Blob* blob() const;
         Anchor* start() const;
         Anchor* end() const;
         size_t length() const;
 
     private:
-        Cursor();
+        Cursor(Blob* blob);
         ~Cursor();
 
         void update();
 
+        Blob* m_blob;
         Anchor* m_start;
         Anchor* m_end;
         size_t m_length;

@@ -6,5 +6,9 @@ DEF_ERROR(NullPointer, "null pointer")
 DEF_ERROR(Argument, "bad argument")
 DEF_ERROR(Bounds, "bad index / size")
 DEF_ERROR(Malloc, "malloc() / realloc() failed")
+DEF_ERROR(AlreadyExists, "element already exists")
+DEF_ERROR(DoesntExists, "element doesn't exists")
+DEF_ERROR(Overlap, "fields are overlapping")
+DEF_ERROR(Inconsistency, "inconsistency")
 
 #undef DEF_ERROR
