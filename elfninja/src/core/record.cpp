@@ -14,30 +14,6 @@ Record::~Record()
         delete it.second;
 }
 
-void Record::addField(std::string const& name, size_t offset, size_t size, FieldSignedness signedness)
-{
-    enj_assert(AlreadyExists, m_fields.find(name) == m_fields.end());
-
-    for (auto it : m_fields)
-    {
-        Field* f = it.second;
-        enj_internal_assert(NullPointer, f);
-
-        enj_assert(Overlap, offset < f->offset() || offset >= f->offset() + f->size());
-    }
-
-    m_fields[name] = new Field(offset, size, signedness);
-}
-
-void Record::removeField(std::string const& name)
-{
-    auto it = m_fields.find(name);
-    enj_assert(DoesntExists, it != m_fields.end());
-
-    delete it->second;
-    m_fields.erase(it);
-}
-
 size_t Record::size() const
 {
     size_t size = 0;
@@ -75,6 +51,30 @@ void Record::readFrom(uint8_t const* data)
 
         f->readFrom(data + f->offset());
     }
+}
+
+void Record::addField(std::string const& name, size_t offset, size_t size, FieldSignedness signedness)
+{
+    enj_assert(AlreadyExists, m_fields.find(name) == m_fields.end());
+
+    for (auto it : m_fields)
+    {
+        Field* f = it.second;
+        enj_internal_assert(NullPointer, f);
+
+        enj_assert(Overlap, offset < f->offset() || offset >= f->offset() + f->size());
+    }
+
+    m_fields[name] = new Field(offset, size, signedness);
+}
+
+void Record::removeField(std::string const& name)
+{
+    auto it = m_fields.find(name);
+    enj_assert(DoesntExists, it != m_fields.end());
+
+    delete it->second;
+    m_fields.erase(it);
 }
 
 Record::Field const& Record::field(std::string const& name) const
@@ -127,14 +127,14 @@ Record::FieldSignedness Record::Field::signedness() const
 
 void Record::Field::writeTo(uint8_t* data) const
 {
-    enj_assert(Argument, data);
+    enj_assert(BadArgument, data);
 
     std::memcpy(data, &m_value, m_size);
 }
 
 void Record::Field::readFrom(uint8_t const* data)
 {
-    enj_assert(Argument, data);
+    enj_assert(BadArgument, data);
 
     m_value = 0;
     std::memcpy(&m_value, data, m_size);

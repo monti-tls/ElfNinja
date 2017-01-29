@@ -1,6 +1,8 @@
 #ifndef __ELFNINJA_CORE_RECORD_H__
 #define __ELFNINJA_CORE_RECORD_H__
 
+#include "elfninja/core/data.h"
+
 #include <cstddef>
 #include <cstdint>
 #include <map>
@@ -8,7 +10,7 @@
 
 namespace enj
 {
-    class Record
+    class Record : public Data
     {
     public:
         enum FieldSignedness
@@ -23,12 +25,12 @@ namespace enj
         Record();
         ~Record();
 
-        void addField(std::string const& name, size_t offset, size_t size, FieldSignedness signedness = UnsignedField);
-        void removeField(std::string const& name);
-
         size_t size() const;
         void writeTo(uint8_t* data) const;
         void readFrom(uint8_t const* data);
+
+        void addField(std::string const& name, size_t offset, size_t size, FieldSignedness signedness = UnsignedField);
+        void removeField(std::string const& name);
 
         Field const& field(std::string const& name) const;
         size_t get(std::string const& name) const;

@@ -4,54 +4,26 @@
 #include "elfninja/core/error.h"
 #include "elfninja/core/contiguous_blob.h"
 #include "elfninja/core/record.h"
-
-/*
-uint16_t      e_type;
-uint16_t      e_machine;
-uint32_t      e_version;
-ElfN_Addr     e_entry;
-ElfN_Off      e_phoff;
-ElfN_Off      e_shoff;
-uint32_t      e_flags;
-uint16_t      e_ehsize;
-uint16_t      e_phentsize;
-uint16_t      e_phnum;
-uint16_t      e_shentsize;
-uint16_t      e_shnum;
-uint16_t      e_shstrndx;
-*/
+#include "elfninja/core/data.h"
+#include "elfninja/core/elf.h"
+#include "elfninja/core/elf_item.h"
+#include "elfninja/core/elf_ehdr.h"
 
 int main(int argc, char** argv)
 {
     try
     {
-        enj::Record r;
+        enj::Blob* blob = new enj::ContiguousBlob();
+        blob->insert(0, (uint8_t const*) 0x400000, sizeof(Elf64_Ehdr));
 
-        r.addField("ei_mag",        EI_MAG0, SELFMAG);
-        r.addField("ei_class",      EI_CLASS, 1);
-        r.addField("ei_data",       EI_DATA, 1);
-        r.addField("ei_version",    EI_VERSION, 1);
-        r.addField("ei_osabi",      EI_OSABI, 1);
-        r.addField("ei_abiversion", EI_ABIVERSION, 1);
-        r.addField("e_type",        &Elf64_Ehdr::e_type);
-        r.addField("e_machine",     &Elf64_Ehdr::e_machine);
-        r.addField("e_version",     &Elf64_Ehdr::e_version);
-        r.addField("e_entry",       &Elf64_Ehdr::e_entry);
-        r.addField("e_phoff",       &Elf64_Ehdr::e_phoff);
-        r.addField("e_shoff",       &Elf64_Ehdr::e_shoff);
-        r.addField("e_flags",       &Elf64_Ehdr::e_flags);
-        r.addField("e_ehsize",      &Elf64_Ehdr::e_ehsize);
-        r.addField("e_phentsize",   &Elf64_Ehdr::e_phentsize);
-        r.addField("e_phnum",       &Elf64_Ehdr::e_phnum);
-        r.addField("e_shentsize",   &Elf64_Ehdr::e_shentsize);
-        r.addField("e_shnum",       &Elf64_Ehdr::e_shnum);
-        r.addField("e_shstrndx",    &Elf64_Ehdr::e_shstrndx);
+        enj::Elf* elf = new enj::Elf(blob);
 
-        Elf64_Ehdr* ehdr = (Elf64_Ehdr*) 0x400000;
+        elf->pull();
 
-        r.readFrom((uint8_t const*) ehdr);
+        printf("e_entry = %08lX\n", elf->ehdr()->get("e_entry"));
 
-        printf("e_entry = 0x%08lX\n", r.get("e_entry"));
+        delete elf;
+        delete blob;
     }
     catch (enj::Error const& e)
     {

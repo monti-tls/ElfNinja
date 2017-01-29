@@ -19,21 +19,21 @@ ContiguousBlob::~ContiguousBlob()
 
 void ContiguousBlob::M_write(size_t pos, uint8_t const* data, size_t size)
 {
-    enj_assert(Argument, pos + size <= m_size);
+    enj_assert(BadArgument, pos + size <= m_size);
 
     std::memcpy(m_buffer + pos, data, size);
 }
 
 void ContiguousBlob::M_read(size_t pos, uint8_t* data, size_t size) const
 {
-    enj_assert(Argument, pos + size <= m_size);
+    enj_assert(BadArgument, pos + size <= m_size);
 
     std::memcpy(data, m_buffer + pos, size);
 }
 
 void ContiguousBlob::M_insert(size_t pos, uint8_t const* data, size_t size)
 {
-    enj_assert(Argument, pos <= m_size);
+    enj_assert(BadArgument, pos <= m_size);
 
     size_t old_size = m_size;
     M_resize(m_size + size);
@@ -44,7 +44,7 @@ void ContiguousBlob::M_insert(size_t pos, uint8_t const* data, size_t size)
 
 void ContiguousBlob::M_remove(size_t pos, size_t size)
 {
-    enj_assert(Argument, pos + size <= m_size);
+    enj_assert(BadArgument, pos + size <= m_size);
 
     std::memmove(m_buffer + pos, m_buffer + pos + size, m_size - (pos + size));
     M_resize(m_size - size);

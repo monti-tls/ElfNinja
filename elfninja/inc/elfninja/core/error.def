@@ -3,12 +3,15 @@
 #endif
 
 DEF_ERROR(NullPointer, "null pointer")
-DEF_ERROR(Argument, "bad argument")
+DEF_ERROR(BadArgument, "bad argument")
 DEF_ERROR(Bounds, "bad index / size")
 DEF_ERROR(Malloc, "malloc() / realloc() failed")
 DEF_ERROR(AlreadyExists, "element already exists")
 DEF_ERROR(DoesntExists, "element doesn't exists")
 DEF_ERROR(Overlap, "fields are overlapping")
-DEF_ERROR(Inconsistency, "inconsistency")
+DEF_ERROR(Internal, "internal error")
+DEF_ERROR(BadOperation, "bad item operation")
+DEF_ERROR(BadElfMag, "bad ELF magic byte sequence")
+DEF_ERROR(BadElfClass, "bad ELF class")
 
 #undef DEF_ERROR

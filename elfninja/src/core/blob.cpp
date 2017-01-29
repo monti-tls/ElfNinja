@@ -38,7 +38,7 @@ void Blob::read(size_t pos, uint8_t* data, size_t size) const
 
 void Blob::insert(size_t pos, uint8_t const* data, size_t size)
 {
-    enj_assert(Argument, data);
+    enj_assert(BadArgument, data);
     enj_assert(Bounds, pos <= M_size());
 
     M_insert(pos, data, size);
@@ -48,7 +48,7 @@ void Blob::insert(size_t pos, uint8_t const* data, size_t size)
 
 void Blob::insertAfter(Anchor* a, uint8_t const* data, size_t size)
 {
-    enj_assert(Argument, a && data && a->blob() == this);
+    enj_assert(BadArgument, a && data && a->blob() == this);
     enj_assert(Bounds, a->pos() <= M_size());
 
     M_insert(a->pos(), data, size);
@@ -58,7 +58,7 @@ void Blob::insertAfter(Anchor* a, uint8_t const* data, size_t size)
 
 void Blob::insertBefore(Anchor* a, uint8_t const* data, size_t size)
 {
-    enj_assert(Argument, a && data && a->blob() == this);
+    enj_assert(BadArgument, a && data && a->blob() == this);
     enj_assert(Bounds, a->pos() <= M_size());
 
     M_insert(a->pos(), data, size);
@@ -68,7 +68,7 @@ void Blob::insertBefore(Anchor* a, uint8_t const* data, size_t size)
 
 void Blob::insertAfterStart(Cursor* c, uint8_t const* data, size_t size)
 {
-    enj_assert(Argument, c && data && c->blob() == this);
+    enj_assert(BadArgument, c && data && c->blob() == this);
     enj_internal_assert(NullPointer, c->start() && c->end());
     enj_assert(Bounds, c->start()->pos() <= M_size());
 
@@ -78,7 +78,7 @@ void Blob::insertAfterStart(Cursor* c, uint8_t const* data, size_t size)
 
 void Blob::insertBeforeStart(Cursor* c, uint8_t const* data, size_t size)
 {
-    enj_assert(Argument, c && data && c->blob() == this);
+    enj_assert(BadArgument, c && data && c->blob() == this);
     enj_internal_assert(NullPointer, c->start() && c->end());
     enj_assert(Bounds, c->start()->pos() <= M_size());
 
@@ -88,7 +88,7 @@ void Blob::insertBeforeStart(Cursor* c, uint8_t const* data, size_t size)
 
 void Blob::insertAfterEnd(Cursor* c, uint8_t const* data, size_t size)
 {
-    enj_assert(Argument, c && data && c->blob() == this);
+    enj_assert(BadArgument, c && data && c->blob() == this);
     enj_internal_assert(NullPointer, c->end() && c->end());
     enj_assert(Bounds, c->end()->pos() <= M_size());
 
@@ -98,7 +98,7 @@ void Blob::insertAfterEnd(Cursor* c, uint8_t const* data, size_t size)
 
 void Blob::insertBeforeEnd(Cursor* c, uint8_t const* data, size_t size)
 {
-    enj_assert(Argument, c && data && c->blob() == this);
+    enj_assert(BadArgument, c && data && c->blob() == this);
     enj_internal_assert(NullPointer, c->end() && c->end());
     enj_assert(Bounds, c->end()->pos() <= M_size());
 
@@ -117,7 +117,7 @@ void Blob::remove(size_t pos, size_t size)
 
 void Blob::removeAfter(Anchor* a, size_t size)
 {
-    enj_assert(Argument, a && a->blob() == this);
+    enj_assert(BadArgument, a && a->blob() == this);
     enj_assert(Bounds, a->pos() + size <= M_size());
 
     M_remove(a->pos(), size);
@@ -127,7 +127,7 @@ void Blob::removeAfter(Anchor* a, size_t size)
 
 void Blob::removeBefore(Anchor* a, size_t size)
 {
-    enj_assert(Argument, a && a->blob() == this);
+    enj_assert(BadArgument, a && a->blob() == this);
     enj_assert(Bounds, a->pos() + size <= M_size());
 
     M_remove(a->pos(), size);
@@ -137,7 +137,7 @@ void Blob::removeBefore(Anchor* a, size_t size)
 
 void Blob::removeAfterStart(Cursor* c, size_t size)
 {
-    enj_assert(Argument, c && c->blob() == this);
+    enj_assert(BadArgument, c && c->blob() == this);
     enj_internal_assert(NullPointer, c->start() && c->end());
     enj_assert(Bounds, c->start()->pos() + size <= M_size());
 
@@ -148,7 +148,7 @@ void Blob::removeAfterStart(Cursor* c, size_t size)
 
 /*void Blob::removeBeforeStart(Cursor* c, size_t size)
 {
-    enj_assert(Argument, c);
+    enj_assert(BadArgument, c);
     enj_internal_assert(NullPointer, c->start() && c->end());
     enj_assert(Bounds, c->start()->pos() + size <= M_size());
 
@@ -159,7 +159,7 @@ void Blob::removeAfterStart(Cursor* c, size_t size)
 
 void Blob::removeAfterEnd(Cursor* c, size_t size)
 {
-    enj_assert(Argument, c && c->blob() == this);
+    enj_assert(BadArgument, c && c->blob() == this);
     enj_internal_assert(NullPointer, c->end() && c->end());
     enj_assert(Bounds, c->end()->pos() + size <= M_size());
 
@@ -170,7 +170,7 @@ void Blob::removeAfterEnd(Cursor* c, size_t size)
 
 /*void Blob::removeBeforeEnd(Cursor* c, size_t size)
 {
-    enj_assert(Argument, c);
+    enj_assert(BadArgument, c);
     enj_internal_assert(NullPointer, c->end() && c->end());
     enj_assert(Bounds, c->end()->pos() + size <= M_size());
 
@@ -193,7 +193,7 @@ Blob::Anchor* Blob::addAnchor(size_t pos)
 
 void Blob::removeAnchor(Anchor* a)
 {
-    enj_assert(Argument, a && a->blob() == this);
+    enj_assert(BadArgument, a && a->blob() == this);
 
     auto it = std::find(m_anchors.begin(), m_anchors.end(), a);
 
@@ -220,7 +220,7 @@ Blob::Cursor* Blob::addCursor(size_t pos, size_t size)
 
 void Blob::removeCursor(Cursor* c)
 {
-    enj_assert(Argument, c && c->blob() == this);
+    enj_assert(BadArgument, c && c->blob() == this);
 
     auto it = std::find(m_cursors.begin(), m_cursors.end(), c);
 
@@ -279,7 +279,7 @@ void Blob::M_updateCursors()
     for (Cursor* c : m_cursors)
     {
         enj_internal_assert(NullPointer, c);
-        enj_internal_assert(Inconsistency, c->blob() == this);
+        enj_internal_assert(Internal, c->blob() == this);
 
         c->update();
     }
@@ -288,7 +288,7 @@ void Blob::M_updateCursors()
 Blob::Anchor::Anchor(Blob* blob)
     : m_blob(blob)
 {
-    enj_internal_assert(Argument, blob);
+    enj_internal_assert(BadArgument, blob);
 }
 
 Blob::Anchor::~Anchor()
@@ -307,7 +307,7 @@ size_t Blob::Anchor::pos() const
 Blob::Cursor::Cursor(Blob* blob)
     : m_blob(blob)
 {
-    enj_internal_assert(Argument, blob);
+    enj_internal_assert(BadArgument, blob);
 }
 
 Blob::Cursor::~Cursor()
