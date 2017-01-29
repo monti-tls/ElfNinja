@@ -13,5 +13,6 @@ DEF_ERROR(Internal, "internal error")
 DEF_ERROR(BadOperation, "bad item operation")
 DEF_ERROR(BadElfMag, "bad ELF magic byte sequence")
 DEF_ERROR(BadElfClass, "bad ELF class")
+DEF_ERROR(BadElfIndex, "bad ELF inex")
 
 #undef DEF_ERROR

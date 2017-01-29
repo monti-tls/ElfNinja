@@ -12,7 +12,7 @@ Piece::Piece(Blob::Cursor* cursor, Data* data)
     , m_scratch(0)
     , m_scratch_size(0)
 {
-    enj_assert(BadArgument, cursor && data);
+    enj_assert(BadArgument, cursor);
 }
 
 Piece::~Piece()
@@ -62,5 +62,6 @@ void Piece::M_manageScratch()
     {
         delete[] m_scratch;
         m_scratch = new uint8_t[m_data->size()];
+        memset(m_scratch, 0, m_data->size());
     }
 }

@@ -3,7 +3,10 @@
 
 #include "elfninja/core/blob.h"
 #include "elfninja/core/elf_item.h"
+#include "elfninja/core/elf_table.h"
 #include "elfninja/core/elf_ehdr.h"
+#include "elfninja/core/elf_phdr.h"
+#include "elfninja/core/elf_shdr.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -20,8 +23,14 @@ namespace enj
         ~Elf();
 
         Blob* blob() const;
-        ElfEhdr* ehdr() const;
+
         bool is32bit() const;
+        size_t shstrndx() const;
+        ElfShdr* shstrtab() const;
+
+        ElfEhdr* ehdr() const;
+        ElfPhdr* phdrs() const;
+        ElfShdr* shdrs() const;
 
         void pull();
         void update();
@@ -33,7 +42,11 @@ namespace enj
         Blob* m_blob;
         bool m_owns_blob;
         ElfEhdr* m_ehdr;
+        ElfTable<ElfPhdr>* m_phdrs;
+        ElfTable<ElfShdr>* m_shdrs;
         bool m_is32bit;
+        size_t m_shstrndx;
+        ElfShdr* m_shstrtab;
     };
 }
 

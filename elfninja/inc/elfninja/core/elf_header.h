@@ -26,6 +26,7 @@ namespace enj
         void set(std::string const& name, size_t value);
         size_t get(std::string const& name) const;
         size_t size(std::string const& name) const;
+        size_t size() const;
 
     protected:
         Piece* M_header() const;

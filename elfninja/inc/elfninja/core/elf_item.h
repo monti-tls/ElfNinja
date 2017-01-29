@@ -4,7 +4,7 @@
 #include "elfninja/core/blob.h"
 
 #include <cstddef>
-#include <list>
+#include <vector>
 
 namespace enj
 {
@@ -21,7 +21,8 @@ namespace enj
         bool is32bit() const;
 
         ElfItem* parent() const;
-        std::list<ElfItem*> const& children() const;
+        std::vector<ElfItem*> const& children() const;
+        ElfItem* child(size_t index) const;
         size_t childrenCount() const;
 
         ElfItem* prev() const;
@@ -42,7 +43,7 @@ namespace enj
     private:
         Elf* m_elf;
         ElfItem* m_parent;
-        std::list<ElfItem*> m_children;
+        std::vector<ElfItem*> m_children;
     };
 }
 

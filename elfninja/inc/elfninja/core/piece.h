@@ -13,7 +13,7 @@ namespace enj
     {
     public:
         Piece(Piece const&) = delete;
-        Piece(Blob::Cursor* cursor, Data* data);
+        Piece(Blob::Cursor* cursor, Data* data = 0);
         ~Piece();
 
         Blob::Cursor* cursor() const;

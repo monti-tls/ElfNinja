@@ -210,7 +210,7 @@ Blob::Cursor* Blob::addCursor(size_t pos, size_t size)
 
     Cursor* c = new Cursor(this);
     c->m_start = addAnchor(pos);
-    c->m_end = addAnchor(size);
+    c->m_end = addAnchor(pos + size);
     c->update();
 
     m_cursors.push_back(c);

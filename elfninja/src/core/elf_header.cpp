@@ -65,6 +65,13 @@ size_t ElfHeader::size(std::string const& name) const
     return m_header->as<Record>()->field(name).size();
 }
 
+size_t ElfHeader::size() const
+{
+    enj_assert(BadOperation, m_header);
+
+    return m_header->as<Record>()->size();
+}
+
 Piece* ElfHeader::M_header() const
 {
     return m_header;

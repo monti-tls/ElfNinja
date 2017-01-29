@@ -5,22 +5,73 @@
 #include "elfninja/core/contiguous_blob.h"
 #include "elfninja/core/record.h"
 #include "elfninja/core/data.h"
-#include "elfninja/core/elf.h"
 #include "elfninja/core/elf_item.h"
+#include "elfninja/core/elf_table.h"
 #include "elfninja/core/elf_ehdr.h"
+#include "elfninja/core/elf_phdr.h"
+#include "elfninja/core/elf.h"
+
+#include "elfninja/core/elf_table_impl.hpp"
+
+#include <sys/types.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 int main(int argc, char** argv)
 {
     try
     {
+        /* Read file contents */
+
+        int fd = open("/bin/ls", O_RDONLY);
+        size_t size = lseek(fd, 0, SEEK_END);
+        lseek(fd, 0, SEEK_SET);
+
+        uint8_t* file = new uint8_t[size];
+        read(fd, file, size);
+        close(fd);
+
+        /* Get this into a blob */
+
         enj::Blob* blob = new enj::ContiguousBlob();
-        blob->insert(0, (uint8_t const*) 0x400000, sizeof(Elf64_Ehdr));
+        blob->insert(0, file, size);
+
+        delete[] file;
+
+        /* Create ELF descriptor */
 
         enj::Elf* elf = new enj::Elf(blob);
-
         elf->pull();
+        elf->update();
+
+        /* Print some useful info */
 
         printf("e_entry = %08lX\n", elf->ehdr()->get("e_entry"));
+
+        printf(".:: PHDRs ::.\n");
+        for (enj::ElfPhdr* phdr = elf->phdrs(); phdr; phdr = (enj::ElfPhdr*) phdr->next())
+        {
+            printf("%08lX %08lX\n", phdr->get("p_offset"), phdr->get("p_vaddr"));
+        }
+
+        printf(".:: SHDRs ::.\n");
+        for (enj::ElfShdr* shdr = elf->shdrs(); shdr; shdr = (enj::ElfShdr*) shdr->next())
+        {
+            printf("%08lX %08lX %s\n", shdr->get("sh_offset"), shdr->get("sh_size"), shdr->name().c_str());
+        }
+
+        elf->shdrs()->set("sh_type", 2);
+        elf->push();
+
+        /* Write output file */
+
+        fd = creat("bin/ls", 0777);
+        file = new uint8_t[blob->size()];
+        blob->read(0, file, blob->size());
+        write(fd, file, blob->size());
+        delete[] file;
+
+        /* Cleanup */
 
         delete elf;
         delete blob;

@@ -43,9 +43,15 @@ ElfItem* ElfItem::parent() const
     return m_parent;
 }
 
-std::list<ElfItem*> const& ElfItem::children() const
+std::vector<ElfItem*> const& ElfItem::children() const
 {
     return m_children;
+}
+
+ElfItem* ElfItem::child(size_t index) const
+{
+    enj_assert(Bounds, index < m_children.size());
+    return m_children[index];
 }
 
 size_t ElfItem::childrenCount() const
@@ -116,7 +122,7 @@ void ElfItem::push() const
 void ElfItem::M_addChild(ElfItem* item)
 {
     enj_assert(BadArgument, item);
-    enj_assert(AlreadyExists,std::find(m_children.begin(), m_children.end(), item) == m_children.end());
+    enj_assert(AlreadyExists, std::find(m_children.begin(), m_children.end(), item) == m_children.end());
     enj_internal_assert(Internal, !item->m_parent);
 
     m_children.push_back(item);
