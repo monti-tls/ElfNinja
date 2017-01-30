@@ -17,21 +17,23 @@ ContiguousBlob::~ContiguousBlob()
     std::free(m_buffer);
 }
 
-void ContiguousBlob::M_write(size_t pos, uint8_t const* data, size_t size)
+void ContiguousBlob::write(size_t pos, uint8_t const* data, size_t size)
 {
     enj_assert(BadArgument, pos + size <= m_size);
+    enj_assert(BadArgument, data);
 
     std::memcpy(m_buffer + pos, data, size);
 }
 
-void ContiguousBlob::M_read(size_t pos, uint8_t* data, size_t size) const
+void ContiguousBlob::read(size_t pos, uint8_t* data, size_t size) const
 {
     enj_assert(BadArgument, pos + size <= m_size);
+    enj_assert(BadArgument, data);
 
     std::memcpy(data, m_buffer + pos, size);
 }
 
-void ContiguousBlob::M_insert(size_t pos, uint8_t const* data, size_t size)
+void ContiguousBlob::insert(size_t pos, uint8_t const* data, size_t size)
 {
     enj_assert(BadArgument, pos <= m_size);
 
@@ -39,10 +41,14 @@ void ContiguousBlob::M_insert(size_t pos, uint8_t const* data, size_t size)
     M_resize(m_size + size);
 
     std::memmove(m_buffer + pos + size, m_buffer + pos, old_size - pos);
-    std::memcpy(m_buffer + pos, data, size);
+
+    if (data)
+        std::memcpy(m_buffer + pos, data, size);
+    else
+        std::memset(m_buffer + pos, 0, size);
 }
 
-void ContiguousBlob::M_remove(size_t pos, size_t size)
+void ContiguousBlob::remove(size_t pos, size_t size)
 {
     enj_assert(BadArgument, pos + size <= m_size);
 
@@ -50,7 +56,7 @@ void ContiguousBlob::M_remove(size_t pos, size_t size)
     M_resize(m_size - size);
 }
 
-size_t ContiguousBlob::M_size() const
+size_t ContiguousBlob::size() const
 {
     return m_size;
 }

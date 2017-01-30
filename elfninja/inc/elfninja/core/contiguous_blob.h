@@ -11,12 +11,11 @@ namespace enj
         ContiguousBlob(size_t chunk_size = 128);
         virtual ~ContiguousBlob();
 
-    protected:
-        virtual void M_write(size_t pos, uint8_t const* data, size_t size);
-        virtual void M_read(size_t pos, uint8_t* data, size_t size) const;
-        virtual void M_insert(size_t pos, uint8_t const* data, size_t size);
-        virtual void M_remove(size_t pos, size_t size);
-        virtual size_t M_size() const;
+        void write(size_t pos, uint8_t const* data, size_t size);
+        void read(size_t pos, uint8_t* data, size_t size) const;
+        void insert(size_t pos, uint8_t const* data, size_t size);
+        void remove(size_t pos, size_t size);
+        size_t size() const;
 
     private:
         void M_resize(size_t size);

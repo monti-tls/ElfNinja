@@ -46,7 +46,7 @@ all: $(PROGRAM) $(STATIC_LIB) $(DYNAMIC_LIB)
 
 .PHONY: clean
 clean:
-	$(RM) -rf $(TMP_DIR) $(BIN_DIR)
+	@$(RM) -rf $(TMP_DIR) $(BIN_DIR)
 
 ### Dependencies
 
@@ -57,18 +57,22 @@ DEPS = $(patsubst $(SRC_DIR)/%.$(SRC_EXT),$(TMP_DIR)/%.d,$(PROG_SRC))
 
 $(PROGRAM): $(PROG_OBJ)
 	@mkdir -p $(@D)
-	$(LD) $^ $(LD_FLAGS) -o $@
+	@$(LD) $^ $(LD_FLAGS) -o $@
+	@echo "(LD) $@"
 
 $(STATIC_LIB): $(LIB_OBJ)
 	@mkdir -p $(@D)
-	$(AR) rcs $@ $^
+	@$(AR) rcs $@ $^
+	@echo "(AR) $@"
 
 $(DYNAMIC_LIB): $(LIB_OBJ)
 	@mkdir -p $(@D)
-	$(LD) $^ $(LD_FLAGS) -shared -o $@
+	@$(LD) $^ $(LD_FLAGS) -shared -o $@
+	@echo "(LD) $@"
 
 ### Translation rules
 
 $(TMP_DIR)/%.o: $(SRC_DIR)/%.$(SRC_EXT)
 	@mkdir -p $(@D)
-	$(CC) -MMD $(CC_FLAGS) -c $< -o $@
+	@$(CC) -MMD $(CC_FLAGS) -c $< -o $@
+	@echo "(CC) $<"

@@ -16,5 +16,9 @@ DEF_ERROR(BadElfClass, "bad ELF class")
 DEF_ERROR(BadElfIndex, "bad ELF index")
 DEF_ERROR(BadStringIndex, "bad string index")
 DEF_ERROR(SizeMismatch, "size mismatch")
+DEF_ERROR(Unbound, "data model is not bound to any pointer")
+DEF_ERROR(Empty, "data model is empty")
+DEF_ERROR(TreeMismatch, "trees does not match")
+DEF_ERROR(BadEvent, "bad pointer event")
 
 #undef DEF_ERROR
