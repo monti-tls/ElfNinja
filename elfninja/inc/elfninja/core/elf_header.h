@@ -21,7 +21,7 @@ namespace enj
         void write() const;
 
         void pull();
-        void push() const;
+        void push();
 
         void set(std::string const& name, size_t value);
         size_t get(std::string const& name) const;

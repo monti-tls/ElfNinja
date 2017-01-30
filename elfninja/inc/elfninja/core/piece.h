@@ -32,8 +32,6 @@ namespace enj
     private:
         Blob::Cursor* m_cursor;
         Data* m_data;
-        uint8_t* m_scratch;
-        size_t m_scratch_size;
     };
 }
 

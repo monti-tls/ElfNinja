@@ -3,7 +3,7 @@
 
 #include "elfninja/core/elf_header.h"
 #include "elfninja/core/elf_table_item.h"
-#include "elfninja/core/record.h"
+#include "elfninja/core/piece.h"
 
 #include <cstddef>
 
@@ -17,16 +17,19 @@ namespace enj
 
         void pull();
         void update();
+        void push();
 
-        std::string const& name() const
-        { return m_name; }
+        std::string const& getName() const;
+        void setName(std::string const& name);
+        Blob::Cursor* data() const;
 
     private:
         template <typename T>
         void M_initRecord(Record* r);
 
     private:
-        std::string m_name;
+        Piece* m_name;
+        Blob::Cursor* m_data;
     };
 }
 

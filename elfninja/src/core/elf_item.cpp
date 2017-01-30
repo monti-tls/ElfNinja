@@ -113,7 +113,7 @@ void ElfItem::update()
         it->update();
 }
 
-void ElfItem::push() const
+void ElfItem::push()
 {
     for (auto it : m_children)
         it->push();

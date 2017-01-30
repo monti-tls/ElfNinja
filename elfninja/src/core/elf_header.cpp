@@ -37,7 +37,7 @@ void ElfHeader::pull()
     update();
 }
 
-void ElfHeader::push() const
+void ElfHeader::push()
 {
     enj_assert(BadOperation, m_header);
 

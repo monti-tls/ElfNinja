@@ -33,7 +33,7 @@ namespace enj
 
         virtual void pull();
         virtual void update();
-        virtual void push() const;
+        virtual void push();
 
     protected:
         void M_addChild(ElfItem* item);

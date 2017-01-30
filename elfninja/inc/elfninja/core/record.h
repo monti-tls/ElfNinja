@@ -26,8 +26,8 @@ namespace enj
         ~Record();
 
         size_t size() const;
-        void writeTo(uint8_t* data) const;
-        void readFrom(uint8_t const* data);
+        void writeTo(Blob::Cursor* c) const;
+        void readFrom(Blob::Cursor* c);
 
         void addField(std::string const& name, size_t offset, size_t size, FieldSignedness signedness = UnsignedField);
         void removeField(std::string const& name);
@@ -45,7 +45,12 @@ namespace enj
         { addField<T>(name, (size_t) &(((U const volatile*) 0)->*member)); }
 
     private:
+        void M_manageScratch();
+
+    private:
         std::map<std::string, Field*> m_fields;
+        uint8_t* m_scratch;
+        size_t m_scratch_size;
     };
 
     class Record::Field

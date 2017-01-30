@@ -6,10 +6,14 @@
 using namespace enj;
 
 Record::Record()
+    : m_scratch(0)
+    , m_scratch_size(0)
 {}
 
 Record::~Record()
 {
+    delete[] m_scratch;
+
     for (auto it : m_fields)
         delete it.second;
 }
@@ -31,25 +35,41 @@ size_t Record::size() const
     return size;
 }
 
-void Record::writeTo(uint8_t* data) const
+void Record::writeTo(Blob::Cursor* c) const
 {
+    enj_assert(BadArgument, c);
+    enj_assert(SizeMismatch, c->length() == size());
+    enj_internal_assert(NullPointer, c->blob());
+
+    const_cast<Record*>(this)->M_manageScratch();
+
     for (auto it : m_fields)
     {
         Field* f = it.second;
         enj_internal_assert(NullPointer, f);
 
-        f->writeTo(data + f->offset());
+        f->writeTo(m_scratch + f->offset());
     }
+
+    c->blob()->write(c->start()->pos(), m_scratch, size());
 }
 
-void Record::readFrom(uint8_t const* data)
+void Record::readFrom(Blob::Cursor* c)
 {
+    enj_assert(BadArgument, c);
+    enj_assert(SizeMismatch, c->length() == size());
+    enj_internal_assert(NullPointer, c->blob());
+
+    M_manageScratch();
+
+    c->blob()->read(c->start()->pos(), m_scratch, size());
+
     for (auto it : m_fields)
     {
         Field* f = it.second;
         enj_internal_assert(NullPointer, f);
 
-        f->readFrom(data + f->offset());
+        f->readFrom(m_scratch + f->offset());
     }
 }
 
@@ -108,6 +128,16 @@ void Record::set(std::string const& name, size_t value)
     enj_internal_assert(NullPointer, f);
 
     f->set(value);
+}
+
+void Record::M_manageScratch()
+{
+    if (m_scratch_size != size())
+    {
+        delete[] m_scratch;
+        m_scratch = new uint8_t[size()];
+        memset(m_scratch, 0, size());
+    }
 }
 
 size_t Record::Field::offset() const

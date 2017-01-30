@@ -9,8 +9,6 @@ using namespace enj;
 Piece::Piece(Blob::Cursor* cursor, Data* data)
     : m_cursor(cursor)
     , m_data(data)
-    , m_scratch(0)
-    , m_scratch_size(0)
 {
     enj_assert(BadArgument, cursor);
 }
@@ -19,7 +17,6 @@ Piece::~Piece()
 {
     enj_internal_assert(NullPointer, m_cursor);
 
-    delete[] m_scratch;
     delete m_data;
     m_cursor->blob()->removeCursor(m_cursor);
 }
@@ -36,32 +33,10 @@ Data* Piece::data() const
 
 void Piece::read()
 {
-    enj_internal_assert(Internal, m_data->size() == m_cursor->length());
-
-    M_manageScratch();
-    enj_internal_assert(NullPointer, m_scratch);
-
-    m_cursor->blob()->read(m_cursor->start()->pos(), m_scratch, m_data->size());
-    m_data->readFrom(m_scratch);
+    m_data->readFrom(m_cursor);
 }
 
 void Piece::write() const
 {
-    enj_internal_assert(Internal, m_data->size() == m_cursor->length());
-
-    const_cast<Piece*>(this)->M_manageScratch();
-    enj_internal_assert(NullPointer, m_scratch);
-
-    m_data->writeTo(m_scratch);
-    m_cursor->blob()->write(m_cursor->start()->pos(), m_scratch, m_data->size());
-}
-
-void Piece::M_manageScratch()
-{
-    if (m_scratch_size != m_data->size())
-    {
-        delete[] m_scratch;
-        m_scratch = new uint8_t[m_data->size()];
-        memset(m_scratch, 0, m_data->size());
-    }
+    m_data->writeTo(m_cursor);
 }

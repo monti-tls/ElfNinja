@@ -57,10 +57,10 @@ int main(int argc, char** argv)
         printf(".:: SHDRs ::.\n");
         for (enj::ElfShdr* shdr = elf->shdrs(); shdr; shdr = (enj::ElfShdr*) shdr->next())
         {
-            printf("%08lX %08lX %s\n", shdr->get("sh_offset"), shdr->get("sh_size"), shdr->name().c_str());
+            printf("%08lX %08lX %s\n", shdr->get("sh_offset"), shdr->get("sh_size"), shdr->getName().c_str());
         }
 
-        elf->shdrs()->set("sh_type", 2);
+        ((enj::ElfShdr*) elf->shdrs()->next())->setName(".YOLO");
         elf->push();
 
         /* Write output file */
