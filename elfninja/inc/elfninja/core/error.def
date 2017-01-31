@@ -20,5 +20,6 @@ DEF_ERROR(Unbound, "data model is not bound to any pointer")
 DEF_ERROR(Empty, "data model is empty")
 DEF_ERROR(TreeMismatch, "trees does not match")
 DEF_ERROR(BadEvent, "bad pointer event")
+DEF_ERROR(Inconsistent, "inconsistent pointers")
 
 #undef DEF_ERROR
