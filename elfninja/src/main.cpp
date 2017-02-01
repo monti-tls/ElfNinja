@@ -89,6 +89,7 @@ namespace enj
             auto it = std::find(m_children.begin(), m_children.end(), child);
             enj_assert(DoesntExists, it != m_children.end());
             m_children.erase(it);
+            child->m_parent = 0;
 
             M_updateNode();
         }
@@ -223,6 +224,7 @@ namespace enj
             enj_assert(BadOperation, m_state != Invalid);
 
             m_blob->remove(m_offset, m_size);
+            // INode<T>::parent()->M_detachChild((T*) this);
 
             Event evt =
             {
@@ -289,7 +291,7 @@ namespace enj
             enj_assert(BadOperation, m_state != Invalid);
 
             // If we don't have any children, switch to invalid mode
-            //   if we were previously
+            //   if we were previously in Managed mode
             if (!INode<T>::childrenCount())
             {
                 if (m_state == Managed)
@@ -349,7 +351,7 @@ namespace enj
                 case Expand:
                 case Shrink:
                 {
-                    if (evt.offset < m_offset || evt.offset + evt.count > m_offset + m_size)
+                    if (evt.offset > m_offset + m_size)
                         return;
 
                     // First, move all childs
@@ -363,7 +365,12 @@ namespace enj
                     M_notifyDown(move);
 
                     // Then, update ourselves
-                    M_setSize(m_size + evt.type == Expand ? evt.count : -evt.count);
+                    if (evt.offset < m_offset)
+                        M_setOffset(m_offset + (evt.type == Expand ? evt.count : -evt.count));
+                    else
+                        M_setSize(m_size + (evt.type == Expand ? evt.count : -evt.count));
+
+                    // M_notifyUp(evt);
 
                     break;
                 }
@@ -377,6 +384,8 @@ namespace enj
                     else
                         M_setSize(m_size + evt.count);
 
+                    M_notifyDown(evt);
+
                     break;
 
                 case MoveUp:
@@ -388,10 +397,10 @@ namespace enj
                     else
                         M_setSize(m_size - evt.count);
 
+                    M_notifyDown(evt);
+
                     break;
             }
-
-            M_notifyUp(evt);
         }
 
         void M_setOffset(size_t new_offset)
@@ -607,7 +616,7 @@ namespace enj
             enj_assert(BadArgument, m_entsize != 0);
 
             for (size_t i = 0; i < count; ++i)
-                new T(blob, offset + i * entsize, this);
+                new T(blob, i, offset + i * entsize, this);
         }
 
         size_t entsize() const
@@ -633,6 +642,10 @@ namespace enj
         {
             enj_assert(BadArgument, index < count());
 
+            // Update other section indices
+            for (size_t i = index + 1; i < count(); ++i)
+                get(i)->setIndex(i - 1);
+
             child(index)->remove();
             delete child(index);
         }
@@ -642,7 +655,7 @@ namespace enj
             size_t new_offset = offset() + size();
             DModel::insert(new_offset, m_entsize);
 
-            return new T(blob(), new_offset, this);
+            return new T(blob(), count(), new_offset, this);
         }
 
     protected:
@@ -678,7 +691,7 @@ namespace enj
             M_addField("ei_abiversion", EI_ABIVERSION, 1);
             M_addField("ei_pad",        EI_PAD, EI_NIDENT - EI_PAD);
 
-            if (hasAttr("32bit"))
+            if (attr("class") == "32")
                 M_addFields<Elf32_Ehdr>();
             else
                 M_addFields<Elf64_Ehdr>();
@@ -707,14 +720,21 @@ namespace enj
     class DPhdrModel : public DRecordModel
     {
     public:
-        DPhdrModel(Blob* blob, size_t offset, DModel* parent = 0)
+        DPhdrModel(Blob* blob, size_t index, size_t offset, DModel* parent = 0)
             : DRecordModel(blob, offset, parent)
+            , m_index(index)
         {
-            if (hasAttr("32bit"))
+            if (attr("class") == "32")
                 M_addFields<Elf32_Phdr>();
             else
                 M_addFields<Elf64_Phdr>();
         }
+
+        size_t index() const
+        { return m_index; }
+
+        void setIndex(size_t index)
+        { m_index = index; }
 
     private:
         template <typename T>
@@ -729,19 +749,52 @@ namespace enj
             M_addField("p_flags",  offsetof(T, p_flags),  sizeof(T::p_flags));
             M_addField("p_align",  offsetof(T, p_align),  sizeof(T::p_align));
         }
+
+    private:
+        size_t m_index;
     };
 
     class DShdrModel : public DRecordModel
     {
     public:
-        DShdrModel(Blob* blob, size_t offset, DModel* parent = 0)
+        DShdrModel(Blob* blob, size_t index, size_t offset, DModel* parent = 0)
             : DRecordModel(blob, offset, parent)
+            , m_index(index)
+            , m_index_wb(0)
         {
-            if (hasAttr("32bit"))
+            if (attr("class") == "32")
                 M_addFields<Elf32_Shdr>();
             else
                 M_addFields<Elf64_Shdr>();
         }
+
+        size_t index() const
+        { return m_index; }
+
+        void setIndex(size_t index)
+        {
+            if (parent())
+            {
+                //TODO: check if parent is indeed a DTableModel<DShdrModel> (w/o RTTI ?)
+                DTableModel<DShdrModel>* table = (DTableModel<DShdrModel>*) parent();
+
+                for (size_t i = 0; i < table->count(); ++i)
+                {
+                    DShdrModel* shdr = table->get(i);
+
+                    if (shdr->get("sh_link")->get() == m_index)
+                        shdr->get("sh_link")->set(index);
+                }
+            }
+
+            m_index = index;
+
+            if (m_index_wb)
+                m_index_wb->set(m_index);
+        }
+
+        void setIndexWriteBack(DIntModel* wb)
+        { m_index_wb = wb; }
 
     private:
         template <typename T>
@@ -758,6 +811,10 @@ namespace enj
             M_addField("sh_addralign", offsetof(T, sh_addralign), sizeof(T::sh_addralign));
             M_addField("sh_entsize",   offsetof(T, sh_entsize),   sizeof(T::sh_entsize));
         }
+
+    private:
+        size_t m_index;
+        DIntModel* m_index_wb;
     };
 
     class DElfModel : public DModel
@@ -766,6 +823,8 @@ namespace enj
         DElfModel(Blob* blob)
             : DModel(blob, 0, blob->size())
         {
+            /* Get the ELF file class and check magic bytes */
+
             DIntModel* ei_mag = new DIntModel(blob, EI_MAG0, SELFMAG);
             enj_assert(BadElfMag, ei_mag->get() != *((size_t*) ELFMAG));
 
@@ -774,35 +833,52 @@ namespace enj
             enj_assert(BadElfClass, ei_class_val == ELFCLASS32 || ei_class_val == ELFCLASS64);
 
             if (ei_class_val == ELFCLASS32)
-            {
                 setAttr("class", "32");
-                setAttr("32bit");
-            }
             else if (ei_class_val == ELFCLASS64)
-            {
                 setAttr("class", "64");
-                setAttr("64bit");
-            }
 
             delete ei_class;
             delete ei_mag;
 
+            /* Setup ELF file header */
+
             m_ehdr = new DEhdrModel(blob, 0, this);
+
+            /* Setup program headers */
 
             DIntModel* phoff = m_ehdr->get("e_phoff");
             DIntModel* phentsize = m_ehdr->get("e_phentsize");
             DIntModel* phnum = m_ehdr->get("e_phnum");
-            m_phdr_table = new DTableModel<DPhdrModel>(blob, phoff->get(), phentsize->get(), phnum->get(), this);
-            m_phdr_table->setOffsetWriteBack(phoff);
-            m_phdr_table->setCountWriteBack(phnum);
+
+            if (phoff->get())
+            {
+                m_phdr_table = new DTableModel<DPhdrModel>(blob, phoff->get(), phentsize->get(), phnum->get(), this);
+                m_phdr_table->setOffsetWriteBack(phoff);
+                m_phdr_table->setCountWriteBack(phnum);
+            }
+
+            /* Setup section headers */
 
             DIntModel* shoff = m_ehdr->get("e_shoff");
             DIntModel* shentsize = m_ehdr->get("e_shentsize");
             DIntModel* shnum = m_ehdr->get("e_shnum");
-            m_shdr_table = new DTableModel<DShdrModel>(blob, shoff->get(), shentsize->get(), shnum->get(), this);
-            m_shdr_table->setOffsetWriteBack(shoff);
-            m_shdr_table->setCountWriteBack(shnum);
+
+            if (shoff->get())
+            {
+                m_shdr_table = new DTableModel<DShdrModel>(blob, shoff->get(), shentsize->get(), shnum->get(), this);
+                m_shdr_table->setOffsetWriteBack(shoff);
+                m_shdr_table->setCountWriteBack(shnum);
+            }
+
+            /* Setup .shstrtab if there's one */
+
+            size_t shstrndx = m_ehdr->get("e_shstrndx")->get();
+            if (shstrndx > 0 && shstrndx < m_shdr_table->count())
+                M_setShstrtab(m_shdr_table->get(shstrndx));
         }
+
+        DEhdrModel* ehdr() const
+        { return m_ehdr; }
 
         DTableModel<DPhdrModel>* phdrTable() const
         { return m_phdr_table; }
@@ -811,9 +887,19 @@ namespace enj
         { return m_shdr_table; }
 
     private:
+        void M_setShstrtab(DShdrModel* shdr)
+        {
+            enj_assert(BadArgument, shdr);
+
+            shdr->setIndexWriteBack(m_ehdr->get("e_shstrndx"));
+            m_shstrtab = shdr;
+        }
+
+    private:
         DEhdrModel* m_ehdr;
         DTableModel<DPhdrModel>* m_phdr_table;
         DTableModel<DShdrModel>* m_shdr_table;
+        DShdrModel* m_shstrtab;
     };
 }
 
@@ -835,10 +921,9 @@ int main(int argc, char** argv)
     {
         /* Read file contents */
 
-        int fd = open("/lib/libcuda.so", O_RDONLY);
+        int fd = open("/bin/ls", O_RDONLY);
         size_t size = lseek(fd, 0, SEEK_END);
         lseek(fd, 0, SEEK_SET);
-
         uint8_t* file = new uint8_t[size];
         read(fd, file, size);
         close(fd);
@@ -847,29 +932,21 @@ int main(int argc, char** argv)
 
         Blob* blob = new ContiguousBlob();
         blob->insert(0, file, size);
-
         delete[] file;
 
         /* Actual test */
 
         DElfModel* elf = new DElfModel(blob);
 
-        /*elf->phdrTable()->remove(5);
-        DPhdrModel* phdr = elf->phdrTable()->insert();
-        phdr->get("p_type")->set(PT_NOTE);
-        phdr->get("p_align")->set(0x4444);*/
+        elf->shdrTable()->remove(2);
+        elf->shdrTable()->remove(2);
 
         for (size_t i = 0; i < elf->shdrTable()->count(); ++i)
         {
             DShdrModel* shdr = elf->shdrTable()->get(i);
 
-            printf("[%3ld] %08lX %08lX\n", i, shdr->get("sh_offset")->get(), shdr->get("sh_size")->get());
+            printf("%2ld <-> %2ld | 0x%08lX %ld\n", i, shdr->index(), shdr->get("sh_offset")->get(), shdr->get("sh_link")->get());
         }
-
-        DShdrModel* shdr = elf->shdrTable()->insert();
-        shdr->get("sh_type")->set(SHT_GROUP);
-
-        std::cout << shdr->attr("class") << std::endl;
 
         /* Write output file */
 
