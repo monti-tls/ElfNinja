@@ -21,7 +21,8 @@ RM = rm
 ### Compilation flags
 
 CC_FLAGS  = -std=gnu++11 -Wall
-CC_FLAGS += -g -ggdb -O0
+#CC_FLAGS += -g -ggdb -O0
+CC_FLAGS += -O2
 LD_FLAGS  = -ldl
 
 ### Files

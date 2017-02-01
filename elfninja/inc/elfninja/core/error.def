@@ -21,5 +21,6 @@ DEF_ERROR(Empty, "data model is empty")
 DEF_ERROR(TreeMismatch, "trees does not match")
 DEF_ERROR(BadEvent, "bad pointer event")
 DEF_ERROR(Inconsistent, "inconsistent pointers")
+DEF_ERROR(AlreadyLinked, "model is already linked")
 
 #undef DEF_ERROR

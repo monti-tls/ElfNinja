@@ -429,7 +429,17 @@ namespace enj
     public:
         DModel(Blob* blob, size_t offset, size_t size, DModel* parent = 0)
             : DPointer(blob, offset, size, parent)
+            , m_backlink(0)
         {}
+
+        virtual ~DModel()
+        {
+            for (auto it : m_links)
+                it->m_backlink = 0;
+
+            if (m_backlink)
+                m_backlink->removeLink(this);
+        }
 
         bool hasAttr(std::string const& name) const
         {
@@ -465,8 +475,53 @@ namespace enj
             return parent()->attr(name);
         }
 
+        DModel* backlink() const
+        { return m_backlink; }
+
+        size_t linksCount() const
+        { return m_links.size(); }
+
+        DModel* link(size_t i) const
+        {
+            enj_assert(BadArgument, i < m_links.size());
+            return m_links[i];
+        }
+
+        std::vector<DModel*> const& links() const
+        { return m_links; }
+
+        void addLink(DModel* link)
+        {
+            enj_assert(BadArgument, link);
+            enj_assert(AlreadyExists, std::find(m_links.begin(), m_links.end(), link) == m_links.end());
+            enj_assert(AlreadyLinked, !link->m_backlink);
+
+            m_links.push_back(link);
+            link->m_backlink = this;
+        }
+
+        void removeLink(DModel* link)
+        {
+            enj_assert(BadArgument, link);
+
+            auto it = std::find(m_links.begin(), m_links.end(), link);
+            enj_assert(DoesntExists, it != m_links.end());
+
+            m_links.erase(it);
+            link->m_backlink = 0;
+        }
+
+        void linkTo(DModel* backlink)
+        {
+            enj_assert(BadArgument, backlink);
+
+            backlink->addLink(this);
+        }
+
     private:
         std::map<std::string, std::string> m_attrs;
+        DModel* m_backlink;
+        std::vector<DModel*> m_links;
     };
 
     class DIntModel : public DModel
@@ -502,17 +557,15 @@ namespace enj
         {
             auto it = m_fields.find(name);
             enj_assert(DoesntExists, it != m_fields.end());
-            enj_assert(DoesntExists, it->second < childrenCount());
 
-            return (DIntModel*) child(it->second);
+            return (DIntModel*) it->second;
         }
 
     protected:
         void M_addField(std::string const& name, size_t offset, size_t size)
         {
             enj_assert(AlreadyExists, m_fields.find(name) == m_fields.end());
-            m_fields[name] = childrenCount();
-            new DIntModel(blob(), this->offset() + offset, size, this);
+            m_fields[name] = new DIntModel(blob(), this->offset() + offset, size, this);
         }
 
         void M_updateNode() override
@@ -525,7 +578,8 @@ namespace enj
 
                 for (auto it = m_fields.begin(); it != m_fields.end(); ++it)
                 {
-                    if (it->second >= childrenCount())
+                    auto c = std::find(children().begin(), children().end(), it->second);
+                    if (c == children().end())
                     {
                         m_fields.erase(it);
                         exit = false;
@@ -539,7 +593,7 @@ namespace enj
         }
 
     private:
-        std::map<std::string, size_t> m_fields;
+        std::map<std::string, DIntModel*> m_fields;
     };
 
     class DStringModel : public DModel
@@ -817,16 +871,89 @@ namespace enj
         DIntModel* m_index_wb;
     };
 
+    class DContentModel : public DModel
+    {
+    public:
+        DContentModel(Blob* blob, size_t offset, size_t size, DModel* parent = 0)
+            : DModel(blob, offset, size, parent)
+            , m_offset_wb(0)
+            , m_size_wb(0)
+        {}
+
+        void setOffsetWriteBack(DIntModel* wb)
+        { m_offset_wb = wb; }
+
+        void setSizeWriteBack(DIntModel* wb)
+        { m_size_wb = wb; }
+
+    protected:
+        void M_updateOffset(size_t new_offset)
+        {
+            if (m_offset_wb)
+                m_offset_wb->set(new_offset);
+        }
+
+        void M_updateSize(size_t new_size)
+        {
+            if (m_size_wb)
+                m_size_wb->set(new_size);
+        }
+
+    private:
+        DIntModel* m_offset_wb;
+        DIntModel* m_size_wb;
+    };
+
+    class DSymModel : public DRecordModel
+    {
+    public:
+        DSymModel(Blob* blob, size_t index, size_t offset, DModel* parent = 0)
+            : DRecordModel(blob, offset, parent)
+            , m_index(index)
+        {
+            if (attr("class") == "32")
+                M_addFields<Elf32_Sym>();
+            else
+                M_addFields<Elf64_Sym>();
+        }
+
+        size_t index() const
+        { return m_index; }
+
+        void setIndex(size_t index)
+        { m_index = index; }
+
+    private:
+        template <typename T>
+        void M_addFields()
+        {
+            M_addField("st_name",  offsetof(T, st_name),  sizeof(T::st_name));
+            M_addField("st_value", offsetof(T, st_value), sizeof(T::st_value));
+            M_addField("st_size",  offsetof(T, st_size),  sizeof(T::st_size));
+            M_addField("st_info",  offsetof(T, st_info),  sizeof(T::st_info));
+            M_addField("st_other", offsetof(T, st_other), sizeof(T::st_other));
+            M_addField("st_shndx", offsetof(T, st_shndx), sizeof(T::st_shndx));
+        }
+
+    private:
+        size_t m_index;
+    };
+
     class DElfModel : public DModel
     {
     public:
         DElfModel(Blob* blob)
             : DModel(blob, 0, blob->size())
+            , m_ehdr(0)
+            , m_phdr_table(0)
+            , m_shdr_table(0)
+            , m_shstrtab(0)
+            , m_contents(0)
         {
             /* Get the ELF file class and check magic bytes */
 
             DIntModel* ei_mag = new DIntModel(blob, EI_MAG0, SELFMAG);
-            enj_assert(BadElfMag, ei_mag->get() != *((size_t*) ELFMAG));
+            enj_assert(BadElfMag, ei_mag->get() == *((uint32_t*) ELFMAG));
 
             DIntModel* ei_class = new DIntModel(blob, EI_CLASS, 1);
             size_t ei_class_val = ei_class->get();
@@ -875,6 +1002,11 @@ namespace enj
             size_t shstrndx = m_ehdr->get("e_shstrndx")->get();
             if (shstrndx > 0 && shstrndx < m_shdr_table->count())
                 M_setShstrtab(m_shdr_table->get(shstrndx));
+
+            /* Build up section contents */
+
+            if (m_shdr_table)
+                M_buildContents();
         }
 
         DEhdrModel* ehdr() const
@@ -895,11 +1027,33 @@ namespace enj
             m_shstrtab = shdr;
         }
 
+        void M_buildContents()
+        {
+            delete m_contents;
+            m_contents = new DModel(blob(), 0, 0, this);
+
+            for (size_t i = 0; i < m_shdr_table->count(); ++i)
+            {
+                DShdrModel* shdr = m_shdr_table->get(i);
+                DIntModel* offset = shdr->get("sh_offset");
+                DIntModel* size = shdr->get("sh_size");
+
+                if (offset->get())
+                {
+                    DContentModel* content = new DContentModel(blob(), offset->get(), size->get(), m_contents);
+                    content->setOffsetWriteBack(offset);
+                    content->setSizeWriteBack(size);
+                    content->linkTo(shdr);
+                }
+            }
+        }
+
     private:
         DEhdrModel* m_ehdr;
         DTableModel<DPhdrModel>* m_phdr_table;
         DTableModel<DShdrModel>* m_shdr_table;
         DShdrModel* m_shstrtab;
+        DModel* m_contents;
     };
 }
 
@@ -908,7 +1062,7 @@ void debug(enj::DModel* ptr, size_t indent = 0)
     for (size_t i = 0; i < indent; ++i)
         printf("  ");
 
-    printf("(%ld, %ld)\n", ptr->offset(), ptr->size());
+    printf("(%lX, %lX)\n", ptr->offset(), ptr->size());
     for (auto it : ptr->children())
         debug(it, indent + 1);
 }
@@ -921,7 +1075,7 @@ int main(int argc, char** argv)
     {
         /* Read file contents */
 
-        int fd = open("/bin/ls", O_RDONLY);
+        int fd = open("bin/elfninja", O_RDONLY);
         size_t size = lseek(fd, 0, SEEK_END);
         lseek(fd, 0, SEEK_SET);
         uint8_t* file = new uint8_t[size];
@@ -938,15 +1092,26 @@ int main(int argc, char** argv)
 
         DElfModel* elf = new DElfModel(blob);
 
-        elf->shdrTable()->remove(2);
-        elf->shdrTable()->remove(2);
-
+        DShdrModel* dynsym = 0;
         for (size_t i = 0; i < elf->shdrTable()->count(); ++i)
         {
             DShdrModel* shdr = elf->shdrTable()->get(i);
-
-            printf("%2ld <-> %2ld | 0x%08lX %ld\n", i, shdr->index(), shdr->get("sh_offset")->get(), shdr->get("sh_link")->get());
+            if (shdr->get("sh_type")->get() == SHT_SYMTAB)
+            {
+                dynsym = shdr;
+                break;
+            }
         }
+
+        DContentModel* content = (DContentModel*) dynsym->link(0);
+        printf(".dynsym @ 0x%08lX (%lX)\n", content->offset(), content->size());
+
+        size_t symbols_entsize = dynsym->get("sh_entsize")->get();
+        size_t symbols_count = content->size() / symbols_entsize;
+        DTableModel<DSymModel>* symbols = new DTableModel<DSymModel>(blob, content->offset(), symbols_entsize, symbols_count, content);
+
+        DSymModel* sym = symbols->insert();
+        //sym->get("st_value")->set(0xAAAA);
 
         /* Write output file */
 
